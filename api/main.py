@@ -1,8 +1,11 @@
 #Imports
 import global_vars
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
+from typing import List
 from ojrson_response import ORJSONResponse
 from modules.news_functions import generate_news, is_valid_date
+from modules.analysis_functions import evaluate_group
+from modules.helper_functions import save_file
 
 api = FastAPI(default_response_class=ORJSONResponse)
 
@@ -25,3 +28,11 @@ async def read_item(phrases : str = "",
     if not is_valid_date(end):
         raise HTTPException(status_code=410, detail=f"Enddate {end} is invalid. Please provide a correct date in dd/mm/rrrr format.")
     return generate_news(phrases, lang, start, end)
+
+@api.post("/upload")
+async def upload(files: List[UploadFile] = File(...)):
+    for file in files:
+        contents = await file.read()
+        save_file(file.filename, contents)
+    return {"Uploaded Filenames": [file.filename for file in files]}
+    
